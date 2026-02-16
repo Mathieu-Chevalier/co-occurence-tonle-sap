@@ -11,6 +11,7 @@ require(labdsv)
 require(rio)
 require(data.table)
 require(tidyverse)
+require(pheatmap)
 require(ade4)
 require(adegraphics)
 require(multipatt)
@@ -159,20 +160,32 @@ plot1 <- ggplot(df.pa.melt, aes(x=variable, y=value, fill=period))+
   scale_color_manual(values = c("#1b9e77","#d95f02","#7570b3","#e7298a"))+
   labs(x="", y="Species richness")
 
+tiff("Final_figures/Fig2.tiff", res=300, width=2200, height=1800)
+print(plot1)
+dev.off()
+
 ### Plot relative frequency of occurrence for a set of longitudinal species (FIGURE 2B)
 tmp <- indval(data.pa[,-c(1:5)], clustering=data.pa$period)
-tmp <- tmp$relfrq
+tmp <- as.data.frame(tmp$relfrq)
 tmp$species <- rownames(tmp)
-pos.sp <- which(tmp$species %in% c("Belodontichthys.truncatus", "Labeo.chrysophekadion", "Paralaubuca.typus", "Cyclocheilichthys.enoplos", "Labiobarbus.siamensis"))
 
-mat <- xtabs(value ~ variable  + species, data = tmp)
+tmp_long <- tmp %>%
+  pivot_longer(cols = -species,
+               names_to = "variable",
+               values_to = "value")
+
+mat <- xtabs(value ~ variable + species, data = tmp_long)
 Heat0 <- pheatmap(mat, angle_col = 90, border_color = NA,  fontsize_col = 6)
 Heat0_grob <- Heat0$gtable 
 
-tiff("Fig2_richness_heatmap.tiff", res=250, width=3800, height=1800)
-# grid.arrange(plot1, plot2, ncol=2)
-ggarrange(plot1, Heat0_grob, ncol=2, nrow=1, labels = c("(A)", "(B)"))
+tiff("Final_figures/Fig3.tiff", res=350, width=2600, height=2000)
+pheatmap(mat, angle_col = 90, border_color = NA,  fontsize_col = 6)
 dev.off()
+
+# tiff("Fig2_richness_heatmap.tiff", res=250, width=3800, height=1800)
+# # grid.arrange(plot1, plot2, ncol=2)
+# ggarrange(plot1, Heat0_grob, ncol=2, nrow=1, labels = c("(A)", "(B)"))
+# dev.off()
 
 # ### bubbble plot showing the relative frequency of occurrence for all species
 # tmp <- indval(data.pa[,-c(1:5)], clustering=data.pa$period)
@@ -688,18 +701,18 @@ levels(df.profile$Assoc) <- c("Positive", "Negative", "Random")
 
 ### Each species
 tmp <- df.profile[-which(df.profile$sppname=="All Species"),]
-tmp.plot <- ggplot(tmp, aes(x=sppname, y=value, fill=Assoc))+
+tmp.plot <- ggplot(tmp, aes(x=value, y=sppname, fill=Assoc))+
   geom_bar(stat="identity")+
   scale_fill_manual(values=c("#a6cee3", "#1f78b4", "#b2df8a"))+
   theme_bw()+
-  theme(axis.text.x = element_text(angle = 90, vjust = 1, hjust=1, size=6))+
-  facet_wrap(~period)+
-  scale_y_continuous(expand = c(0, 0))+
-  labs(x="", y="Percent of pairings", fill="Type of association")+
+  facet_wrap(~period, nrow=1)+
+  scale_x_continuous(expand = c(0, 0))+
+  labs(x="", y="Percent of pairings", fill="Type of association")
 
-tiff("Change_associations_species.tiff", res=250, width=2800, height=2000)
+tiff("Final_figures/Fig7.tiff", res=400, width=4800, height=4000)
 print(tmp.plot)
 dev.off()
+
 
 ### All species
 tmp <- df.profile[which(df.profile$sppname=="All Species"),]
